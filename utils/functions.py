@@ -100,7 +100,7 @@ def get_2d_jointplot_with_text(x_array, y_array, x_label, y_label,save_path, fig
   
   
     # Plot the marginal distributions and leave 2 vertical and horizontal spaces for the contour labels
-    g.plot_marginals(sns.histplot, color='black', alpha=0.1, bins=20, kde=True)
+    #g.plot_marginals(sns.histplot, color='black', alpha=0.1, bins=20, kde=True)
     g.ax_marg_x.set_xlim(0, max(x_array))
     g.ax_marg_y.set_ylim(0, max(y_array))
 
@@ -145,9 +145,9 @@ def get_2d_jointplot_with_text(x_array, y_array, x_label, y_label,save_path, fig
     g.ax_joint.axvspan(0.53, 0.67, color='red', alpha=0.25)
     g.ax_joint.axhspan(0.17, 0.23, color='blue', alpha=0.25)
     plt.tight_layout()
-    plt.savefig(save_path)
-    
-    plt.close()
+    if save_path:
+        plt.savefig(save_path)
+        plt.close()
 
 def get_2d_jointplot_with_series(x_array, y_array, x_array_series, y_array_series, color_array, x_label, y_label, save_path, figsize_mm=(40, 60), \
                                 yticks=None, xticks=None,fontsize=10, mark_emdb_ids=None, emdb_id_list=None, \
