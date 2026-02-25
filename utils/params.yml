@@ -1,0 +1,15 @@
+# params.yaml
+featureClass:
+  shape:
+    - Maximum3DDiameter
+    - MajorAxisLength
+    - MinorAxisLength
+    - LeastAxisLength
+    - Elongation
+    - SurfaceArea
+    - Sphericity
+    - SurfaceVolumeRatio
+    
+
+imageType:
+  Original: {}
