@@ -4,3 +4,9 @@ __pycache__/
 *.pyc
 .json
 .vscode/
+*.out
+*.png
+*.pdf
+*.jpg
+*.eps
+
