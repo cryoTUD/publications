@@ -65,7 +65,7 @@ def main():
     print(f"Total number of voxels inside confidence mask outside targets: {num_voxels_inside_confidence_mask_outside_target}")
     total_num_voxels = num_voxels_inside_target + num_voxels_inside_confidence_mask_outside_target
     print(f"Total number of voxels: {total_num_voxels}")
-    sys.exit(0)
+    #sys.exit(0)
     # Get the set of all emdb ids present in both the data
     emdb_ids_in_f1_scores = [int(x) for x in f1_scores_emdb_id.keys()]
     emdb_ids_in_sigmoid_output = [int(x) for x in values_inside_targets_all.keys()]
