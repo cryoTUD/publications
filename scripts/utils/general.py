@@ -1,12 +1,36 @@
 # Setup the environment
-def setup_environment():
+def setup_environment(LOCSCALE_2_SCRIPTS_PATH):
     import os 
-    data_archive_path = os.environ['LOCSCALE_2_DATA_ARCHIVE_PATH']
+    data_folder = check_and_download_plot_data(LOCSCALE_2_SCRIPTS_PATH)
+    print(f"Sourcing data from: {data_folder}")
     print("-" * 80)
-    print(f"Sourcing data from: {data_archive_path}")
-    print("-" * 80)
-    return data_archive_path
+    return data_folder
 
+def check_and_download_plot_data(LOCSCALE_2_SCRIPTS_PATH):
+    import os 
+    import wget 
+    import zipfile
+    data_folder = os.path.join(LOCSCALE_2_SCRIPTS_PATH, "LocScale2.0_NComms_2026_plotData")
+    if os.path.exists(data_folder):
+        print("Data already exists. Skipping download.")
+        return data_folder
+    
+    url_for_plot_data = "https://surfdrive.surf.nl/public.php/dav/files/pr7rjMgKGZwY5Qa/?accept=zip"
+    # download the data
+    PLOT_DATA_STORE_PATH_zip = LOCSCALE_2_SCRIPTS_PATH + ".zip"
+    wget.download(url_for_plot_data, out=PLOT_DATA_STORE_PATH_zip)
+    
+    with zipfile.ZipFile(PLOT_DATA_STORE_PATH_zip, 'r') as zip_ref:
+        zip_ref.extractall(LOCSCALE_2_SCRIPTS_PATH)
+
+    os.remove(PLOT_DATA_STORE_PATH_zip)
+    data_folder = os.path.join(LOCSCALE_2_SCRIPTS_PATH, "LocScale2.0_NComms_2026_plotData")
+    if os.path.exists(data_folder):
+        print("Data downloaded and extracted successfully.")
+        return data_folder
+    else:
+        raise Exception("Data download or extraction failed.")
+    
 def copy_file_to_folder(file, folder):
     """Copy a file to a specified folder."""
     import shutil
