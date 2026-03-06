@@ -1,0 +1,12 @@
+name: locscale2_scripts
+channels:
+  - conda-forge
+  - defaults
+  - nvidia
+dependencies:
+  - python=3.11
+  - numpy=1.26.0
+  - pandas=2.2.3
+  - pip
+  - pip:
+      - locscale
