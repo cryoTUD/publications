@@ -5,8 +5,10 @@ channels:
   - nvidia
 dependencies:
   - python=3.11
-  - numpy=1.26.0
-  - pandas=2.2.3
+  - numpy
+  - gfortran
+  - mpi4py
+  - openmpi
   - pip
   - pip:
       - locscale
