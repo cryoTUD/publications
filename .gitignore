@@ -9,4 +9,6 @@ __pycache__/
 *.pdf
 *.jpg
 *.eps
+LocScale2.0_NComms_2026_plotData/*
+LocScale2.0_NComms_2026_plotData/
 
