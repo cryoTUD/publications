@@ -1,6 +1,6 @@
 # LocScale 2.0
 
-Here is a repository which contains all the scripts needed to view the figures from the paper "Confidence-guided cryo-EM map optimisation with LocScale-2.0" (2025) by Alok Bharadwaj, Reinier de Bruin, and Arjen J. Jakobi.
+Here is a repository which contains all the scripts needed to view the figures from the paper "[Confidence-guided cryo-EM map optimisation with LocScale-2.0](https://www.biorxiv.org/content/10.1101/2025.09.11.674726v1.full)" (2025) by Alok Bharadwaj, Reinier de Bruin, and Arjen J. Jakobi.
 
 ## Run on Binder
 Click the following link to run the script directly on Binder. This automatically loads the required environment from the environment.yml file. Opening this for the first time requires about ten minutes of time (depending on server load). 
@@ -27,4 +27,5 @@ Select the right kernel and run the notebook. Each notebook is named after the f
 Click through all the code cells to get the figures on the screen.
 
 That's it! 
+
 
