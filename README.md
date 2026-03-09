@@ -8,7 +8,7 @@ Click the following link to run the script directly on Binder. This automaticall
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cryoTUD/publications/LocScale_2025?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2F)
 
 ## Run locally
-You can find the Jupyter Notebooks present under "notebooks" folder. We recommend running them on VS Code. [Click here for a quick introduction](https://code.visualstudio.com/docs/datascience/jupyter-notebooks
+You can find the Jupyter Notebooks present under "notebooks" folder. We recommend running them on VS Code. [Click here for a quick introduction](https://code.visualstudio.com/docs/datascience/jupyter-notebooks)
 
 ### Steps: 
 #### 1. Install environment
@@ -27,3 +27,4 @@ Select the right kernel and run the notebook. Each notebook is named after the f
 Click through all the code cells to get the figures on the screen.
 
 That's it! 
+
