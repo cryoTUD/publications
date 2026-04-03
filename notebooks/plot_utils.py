@@ -285,10 +285,11 @@ def plot_fsc_curves(
     for key, fsc in fsc_dict.items():
         label = (labels or {}).get(key, str(key))
         ax.plot(freq, fsc, label=label, linewidth=linewidth)
-    ax.axhline(0.143, color="gray", linestyle="--", linewidth=1, label="FSC=0.143")
+    #ax.axhline(0.143, color="gray", linestyle="--", linewidth=1, label="FSC=0.143")
     ax.set_xlabel("Spatial Frequency [Å⁻¹]", fontsize=fontsize)
     ax.set_ylabel("FSC", fontsize=fontsize)
-    ax.set_ylim(ylims or [-0.1, 1.05])
+    if ylims is not None:
+        ax.set_ylim(ylims or [-0.1, 1.05])
     ax.legend(fontsize=fontsize * 0.75)
     add_resolution_axis(ax, fontsize=fontsize * 0.8)
     plt.tight_layout()
