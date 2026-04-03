@@ -1,1 +1,7 @@
 locscale/*
+data/*
+figures/*
+*.pyc
+*.pkl
+*._ipynb_checkpoints
+*.__pycache__/
