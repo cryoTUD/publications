@@ -2,18 +2,14 @@ name: faraday2022
 channels:
   - conda-forge
   - defaults
-
+  - nvidia
 dependencies:
   - python=3.11
+  - numpy
+  - gfortran
+  - mpi4py
+  - openmpi
   - pip
   - pip:
-    - locscale
-    - typing_extensions
-  # ── Jupyter / notebook execution ──────────────────────────────────────────
-  - jupyter
-  - nbconvert
-  - ipykernel
-
-
-  # ── Excel manifest output ─────────────────────────────────────────────────
-  - openpyxl
+      - locscale
+      - ipykernel
