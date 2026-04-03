@@ -7,11 +7,13 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-    - locscale==2.3.1.post5
+    - locscale
+    - typing_extensions
   # ── Jupyter / notebook execution ──────────────────────────────────────────
   - jupyter
   - nbconvert
   - ipykernel
+
 
   # ── Excel manifest output ─────────────────────────────────────────────────
   - openpyxl
