@@ -1,0 +1,17 @@
+name: faraday2022
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - locscale==2.3.1.post5
+  # ── Jupyter / notebook execution ──────────────────────────────────────────
+  - jupyter
+  - nbconvert
+  - ipykernel
+
+  # ── Excel manifest output ─────────────────────────────────────────────────
+  - openpyxl
