@@ -5,12 +5,12 @@ Here is a repository which contains all the scripts needed to view the figures f
 
 ## Instructions
 
-1) Create a environment variable to point this directory
-export LOCAL_FARADAY_PATH=/home/path/to/this/folder
+You can easily run these scripts by clicking Binder link below: 
 
-2) Pull the latest version of LocScale with the tag "faraday_discussions_prerelease_updated"
-git checkout faraday_discussions_prerelease_updated
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cryoTUD/publications/ElectronScattering_2022)
 
-3) Have the conda environment "locscalev2" so that it contains all the modules required
+Alternatively, you can install the required pacakges using the _environment.yml_ file
 
-4) run the script LOCAL_FARADAY_PATH+"\faraday_discussions\figure_scripts\general\print_all_figures.py"
+conda env create -f environment.yml 
+
+This creates a python environment faraday2022. Activate this. Either run the python script print_all_figures.py or go through all the Jupyter Notebooks inside the Notebooks folder. The first notebook allows you to run through all the analysis scripts to process the raw data to generate CSV files which are used to obtain the plots. 
