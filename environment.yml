@@ -1,0 +1,15 @@
+name: faraday2022
+channels:
+  - conda-forge
+  - defaults
+  - nvidia
+dependencies:
+  - python=3.11
+  - numpy
+  - gfortran
+  - mpi4py
+  - openmpi
+  - pip
+  - pip:
+      - locscale
+      - ipykernel
