@@ -1,0 +1,20 @@
+{
+    "0038" :
+    {
+        "X" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/unsharpened_maps/EMD_38_unsharpened_fullmap.mrc",
+        "Y" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/hybrid_model_maps_version_C/emd_0038_hybrid_model_map_refined.mrc",
+        "M" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/confidence_masks/emd_0038_FDR_confidence_final.map"
+    },
+    "9941" :
+    {
+        "X" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/unsharpened_maps/EMD_9941_unsharpened_fullmap.mrc",
+        "Y" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/hybrid_model_maps_version_C/emd_9941_hybrid_model_map_refined.mrc",
+        "M" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/confidence_masks/emd_9941_FDR_confidence_final.map"
+    },
+    "7133" :
+    {
+        "X" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/unsharpened_maps/EMD_7133_unsharpened_fullmap.mrc",
+        "Y" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/hybrid_model_maps_version_C/emd_7133_hybrid_model_map_refined.mrc",
+        "M" : "/tudelft/abharadwaj1/staff-umbrella/ajlab/AB/PhD_research/cryo_em_map_sharpening/papers_and_conference/elife_paper/figure_information/data/confidence_masks/emd_7133_FDR_confidence_final.map"
+    }
+}

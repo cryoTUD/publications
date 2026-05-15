@@ -2,7 +2,7 @@ import os
 import numpy as np 
 import h5py
 
-parent_modeldata_directory = "/home/abharadwaj1/scratch/dev/emmernet_training/training_cubes/segmentation_with_low_pass_no_closing"
+parent_modeldata_directory = "/home/abharadwaj1/dev/map_sharpening/emmernet/default_parking/locscale2_training_test"
 
 cubedata_directory = os.path.join(parent_modeldata_directory, "cubedata_directory")
 cubedata_training = os.path.join(cubedata_directory, "cubedata_training")

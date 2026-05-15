@@ -19,8 +19,8 @@ from scipy.ndimage import laplace
 # internal imports
 # Add the path to the sys.path
 import h5py
-from .emmernet_utils import collect_all_data, prepare_dataset_for_all_emdbs_parallel
-from .emmernet_models import define_model, define_model_regularized, define_model_large, define_model_dropout, define_model_two_channel
+from emmernet_utils import collect_all_data, prepare_dataset_for_all_emdbs_parallel
+from emmernet_models import define_model, define_model_regularized, define_model_large, define_model_dropout, define_model_two_channel
 import random
 ### set random seed for reproducibility
 random.seed(42)
@@ -36,10 +36,10 @@ parser = argparse.ArgumentParser(description="produces neural network sharpened 
 parser.add_argument("-run", "--run_configuration", nargs='+', help="run configuration, options: 'data_preparation' or 'neural_network' or both, this argument is required", default=None, required=False)
 
 # directory names
-parser.add_argument("--training_targets_json", "-training_targets_json", type=str, help="Path to json file with input and training targets", required=True)
+parser.add_argument("--training_targets_json", "-training_targets_json", type=str, help="Path to json file with input and training targets", required=False)
 parser.add_argument("--num_maps_training", "-num_maps_training", type=int, help="Number of maps to use for training", default=None)
 parser.add_argument("--num_maps_validation", "-num_maps_validation", type=int, help="Number of maps to use for validation", default=None)
-parser.add_argument("--parent_data_dir", "-parent_data_dir", type=str, help="Parent directory for all data related to this model, defaults to current working directory", required=True)
+parser.add_argument("--parent_data_dir", "-parent_data_dir", type=str, help="Parent directory for all data related to this model, defaults to current working directory", required=False)
 ## DATASETS CHARACTERISTICS
 # basics
 parser.add_argument("-cz", "--cube_size", type=int, help="size of map cubes, options: '64', '32' or '16', defaults to 32", default=32)
@@ -124,7 +124,7 @@ def print_hyperparameters(args):
     import pickle
     print("Hyperparameters:")
     folders = create_directories(args)
-    model_name_dir = folders["model_name_dir"]
+    model_name_dir = folders["model_data_dir"]
     cubedata_dir = folders["cubedata_dir"]
 
     cubedata_training_dir = folders["cubedata_training_dir"]
@@ -268,8 +268,8 @@ def create_hdf5_datagenerators(args):
     validation_cubes_length = len(key_list_validation)
     print(f"Number of training cubes: {training_cubes_length}")
 
-    training_data_generator = HDF5CubeDataGenerator(h5_file_training, key_list_training, args.batch_size)
-    validation_data_generator = HDF5CubeDataGenerator(h5_file_validation, key_list_validation, args.batch_size)
+    training_data_generator = HDF5CubeDataGenerator(h5_file_training, key_list_training, args.batch_size, cube_size=args.cube_size)
+    validation_data_generator = HDF5CubeDataGenerator(h5_file_validation, key_list_validation, args.batch_size, cube_size=args.cube_size)
 
     return training_data_generator, validation_data_generator, training_cubes_length, validation_cubes_length
 
@@ -303,7 +303,7 @@ def fit_UNet_model(UNet_model, training_data_generator, validation_data_generato
 
     # run 
     epochs = args.num_epochs
-    nn_callbacks = [save_weights_on_epoch()]
+    nn_callbacks = [save_weights_on_epoch(model_save_folder=saved_models_dir, model_name=args.model_name)]
 
     # fit model
     nn_callbacks.append(tensorboard_callback)
@@ -409,11 +409,17 @@ def run_UNet_model(args):
         load_epoch (int): specifies the start epoch, needed if the start type is continue. Defaults to None.
     """
     output_folders = create_directories(args)
-    GPU_nums = " ".join([str(x) for x in args.GPU_nums])
+    GPU_nums_str = ",".join([str(x) for x in args.GPU_nums])
     # GPUs
-    print("Setting CUDA_VISIBLE_DEVICES to {}".format(GPU_nums))
-    os.environ["CUDA_VISIBLE_DEVICES"]=GPU_nums  
-    mirrored_strategy = tf.distribute.MirroredStrategy()
+    print("Setting CUDA_VISIBLE_DEVICES to {}".format(args.GPU_nums))
+    os.environ["CUDA_VISIBLE_DEVICES"]=GPU_nums_str
+    GPU_nums_length = len(args.GPU_nums) 
+    GPU_names = []
+    for i in np.arange(GPU_nums_length):
+        GPU_num = args.GPU_nums[i]
+        GPU_names.append(("/gpu:"+ str(GPU_num)))
+
+    mirrored_strategy = tf.distribute.MirroredStrategy(devices=GPU_names)
 
     # Select the right type of model
 
@@ -430,7 +436,6 @@ def run_UNet_model(args):
     print(tf.keras.backend.image_data_format())
     # start type
     with mirrored_strategy.scope():
-        
         if args.nn_loss_name == "MAE":
             nn_loss = tf.keras.losses.MeanAbsoluteError()
             nn_metric = ['mae']
@@ -439,7 +444,11 @@ def run_UNet_model(args):
             nn_metric = ['mse']
     
         UNet_model = model_definition_function(args.cube_size)
-        UNet_model.compile(optimizer=args.nn_optimizer, loss=nn_loss, metrics=nn_metric)
+        if args.nn_optimizer_name == "Adam":
+            optimizer = tf.keras.optimizers.Adam(learning_rate=args.nn_learning_rate)
+        else:
+            optimizer = tf.keras.optimizers.SGD(learning_rate=args.nn_learning_rate)
+        UNet_model.compile(optimizer=optimizer, loss=nn_loss, metrics=nn_metric)
 
         print(UNet_model.summary())
         print(model_definition_function.__name__)
@@ -468,16 +477,16 @@ def main():
     # "neural_network" to only run the neural network training,
     # "both" to run both the data preparation and the neural network training in one run
 
-    args_dict["run_configuration"] = "both"
+    args_dict["run_configuration"] = "neural_network"
     # Setting output directories and files
     args_dict["parent_data_dir"] = "/home/abharadwaj1/dev/map_sharpening/emmernet/default_parking" #<-- set parent data directory, 
-    args_dict["model_name"] = "locscale2_training" #<-- set model name, collection dir, cubedata_dir and outputdata_dir will be created inside this dir 
+    args_dict["model_name"] = "locscale2_training_test" #<-- set model name, collection dir, cubedata_dir and outputdata_dir will be created inside this dir 
     args_dict["append_text"] = "dropout_0p5_lr_0p0001_l1_0p01" #<-- set append text to store the model weights and training performance for different hyperparameter settings in different folders, format: [datetime]_[append_text], if None, only datetime will be used
     # Set the input to training as a json file 
-    args_dict["training_targets_json"] = "7_emdb_full_info_with_curated_micelle.json"
+    args_dict["training_targets_json"] = "training_targets_temp.json"
 
     # Processing parameters (num CPU and GPU)
-    args_dict["num_processes"] = 10 # Number of processes to prepare the data 
+    args_dict["num_processes"] = 3 # Number of processes to prepare the data 
     args_dict["GPU_nums"] = [1] # GPU numbers to use for training, format: '0 1 2 3'
 
     # Hyperparameters: data preparation
@@ -491,7 +500,7 @@ def main():
     args = argparse.Namespace(**args_dict)
     
     # Create directories for outputs 
-    folders = create_directories(args)
+    _ = create_directories(args)
 
     # Run configuration decision tree
     if "data_preparation" in args.run_configuration:

@@ -642,7 +642,7 @@ def chunk_and_save_emdb_pdb_cubes(emdb_id, step_size, cube_size, cubedata_dir, c
 
     try: 
         unsharpened_collected_path = collected_filenames["X_emmap_paths"][emdb_id]
-        locscale_collected_path = collected_filenames["Y_locscale_paths"][emdb_id]
+        locscale_collected_path = collected_filenames["Y_emmap_paths"][emdb_id]
         mask_collected_path = collected_filenames["mask_paths"][emdb_id]
 
         assert os.path.exists(unsharpened_collected_path), f"Unsharpened map {unsharpened_collected_path} does not exist"
@@ -777,6 +777,68 @@ def copy_files(source_path, destination_folder):
 
     return destination_path
 
+
+def create_combined_dataset(cubedata_directory, combined_dataset_filename):
+    import os
+    import json 
+    from tqdm import tqdm
+    import h5py
+    emdb_ids_in_cubedata = [x for x in os.listdir(cubedata_directory) if os.path.isdir(os.path.join(cubedata_directory, x))]
+    print("Number of emdb_ids in cubedata: ", len(emdb_ids_in_cubedata))
+    emdb_dirs = [os.path.join(cubedata_directory, x) for x in emdb_ids_in_cubedata]
+    # Create a hdf5 file to store the combined dataset
+    combined_dataset_path = os.path.join(cubedata_directory, combined_dataset_filename)
+   
+    with h5py.File(combined_dataset_path, "w") as combined_dataset:
+        all_augmentation_types = ["bfactor", "rotation", "gaussian_blur"]
+        for emdb_dir in tqdm(emdb_dirs):
+            emdb_id = os.path.basename(emdb_dir)
+            # if str(emdb_id) not in random_sample_float and emdb_id not in random_sample_validation_float:
+            #     #print(f"{emdb_id} not in random sample")
+            #     continue
+            # read teh XY_filenames_matched json file
+            xy_filenames_json_file = os.path.join(emdb_dir, f"XY_filenames_matched_{os.path.basename(emdb_dir)}.json")
+            if not os.path.isfile(xy_filenames_json_file):
+                print(f"XY_filenames_matched json file does not exist for {emdb_dir}")
+                continue
+
+            xy_filenames_list = json.load(open(xy_filenames_json_file, "r"))
+
+            for i, xy_pair in enumerate(xy_filenames_list):
+                x_key, y_key = xy_pair
+                x_augmentation_type = x_key.split("_")[2] 
+                if x_augmentation_type == "gaussian":
+                    x_augmentation_type = "gaussian_blur"
+                y_augmentation_type = y_key.split("_")[2]
+                x_augmentation_number = x_key.split("_")[3] if x_augmentation_type != "gaussian_blur" else 0
+                y_augmentation_number = y_key.split("_")[3]
+                x_center = [x for x in x_key.split("_")[5:8]]
+                y_center = [x for x in y_key.split("_")[5:8]]
+
+                x_h5_basename = "cubes_original_map.h5" if x_augmentation_type == "original" else f"cubes_{x_augmentation_type}_{x_augmentation_number}_map.h5"
+                x_h5_file = os.path.join(emdb_dir, f"X_emmap_cubes_{os.path.basename(emdb_dir)}","cubes",f"{x_augmentation_type}", x_h5_basename)
+                y_h5_basename = "cubes_original_map.h5" if y_augmentation_type == "original" else f"cubes_{y_augmentation_type}_{y_augmentation_number}_map.h5"
+                y_h5_file = os.path.join(emdb_dir, f"Y_locscale_cubes_{os.path.basename(emdb_dir)}","cubes",f"{y_augmentation_type}", y_h5_basename)
+                if not os.path.isfile(x_h5_file):
+                    print(f"{x_h5_file} does not exist")
+                    continue
+                if not os.path.isfile(y_h5_file):
+                    print(f"{y_h5_file} does not exist")
+                    continue
+                
+                # create a group for each pair of x and y datasets
+                group = combined_dataset.create_group(f"{i}_{emdb_id}")
+                # create an external link to the x and y datasets in the respective h5 files
+                group[f"{i}_x_{emdb_id}_{x_key}"] = h5py.ExternalLink(x_h5_file, x_key)
+                group[f"{i}_y_{emdb_id}_{y_key}"] = h5py.ExternalLink(y_h5_file, y_key)
+                
+                
+    # print the length of keys in the combined dataset
+    with h5py.File(combined_dataset_path, "r") as combined_dataset:
+        print("Number of keys in the combined dataset: ", len(combined_dataset.keys()))
+                
+    return combined_dataset_path
+
 def collect_all_data(collection_directory, training_targets_json, num_maps_training=None, num_maps_validation=None):
     '''
     Function to preprocess all EMDB PDB entries
@@ -793,7 +855,7 @@ def collect_all_data(collection_directory, training_targets_json, num_maps_train
     
     
     X_emmap_paths_new = {}
-    Y_locscale_paths_new = {}
+    Y_emmap_paths_new = {}
     mask_paths_new = {}
     emdb_keys_all = list(local_files_locscale.keys())
     
@@ -804,21 +866,21 @@ def collect_all_data(collection_directory, training_targets_json, num_maps_train
     
     for emdb in tqdm(emdb_keys, desc="Collecting all data"):
         emdb_input_files = local_files_locscale[emdb]
-        X_path = emdb_input_files["X_path"]
-        Y_path = emdb_input_files["curated_micelle_path_1"]
-        mask_path = emdb_input_files["M_path_low_pass"]
+        X_path = emdb_input_files["X"]
+        Y_path = emdb_input_files["Y"]
+        mask_path = emdb_input_files["M"]
         X_path_copied = copy_files(X_path, collection_directory)
         Y_path_copied = copy_files(Y_path, collection_directory)
         mask_path_copied = copy_files(mask_path, collection_directory)
 
         X_emmap_paths_new[emdb] = X_path_copied
-        Y_locscale_paths_new[emdb] = Y_path_copied
+        Y_emmap_paths_new[emdb] = Y_path_copied
         mask_paths_new[emdb] = mask_path_copied
 
 # Save the paths to a json file
     collected_file_names = {
         "X_emmap_paths": X_emmap_paths_new,
-        "Y_locscale_paths": Y_locscale_paths_new,
+        "Y_emmap_paths": Y_emmap_paths_new,
         "mask_paths": mask_paths_new,
         "emdb_keys": emdb_keys
         
@@ -829,7 +891,7 @@ def collect_all_data(collection_directory, training_targets_json, num_maps_train
     return collected_file_names
 
     
-def prepare_dataset_for_all_emdbs_parallel(emdb_ids_to_prepare, cubedata_directory,collection_directory, step_size=24, cube_size=32, n_jobs=10, max_cubes=None):
+def prepare_dataset_for_all_emdbs_parallel(emdb_ids_to_prepare, cubedata_directory, collection_directory, combined_h5_filename, step_size=24, cube_size=32, n_jobs=10, max_cubes=None):
     '''
     Function to prepare the dataset for all EMDB PDB entries in parallel
     
@@ -891,6 +953,9 @@ def prepare_dataset_for_all_emdbs_parallel(emdb_ids_to_prepare, cubedata_directo
     with open(XY_filenames_dataset_json, 'w') as f:
         json.dump(XY_filenames_dataset, f)
 
+    # Combine h5 files into a single h5 file with external links to the original h5 files
+    combined_file_path = create_combined_dataset(cubedata_directory, combined_h5_filename)
+    
     return X_filenames_dataset, Y_filenames_dataset, XY_filenames_dataset
 
 
@@ -1021,62 +1086,3 @@ def get_dirname_nth_level(path, n):
 def get_emdb_id_from_cube_path(cube_path):
     emdb_id = os.path.basename(get_dirname_nth_level(cube_path, 4))
     return emdb_id
-
-
-# def print_im_properties(im):
-#     """ prints map properties to user
-
-#     Args:
-#         im (np.ndarray): 3D density data
-#     """
-    
-#     min = np.round(float(im.min()), 6)
-#     max = np.round(float(im.max()), 6)
-#     mean = np.round(float(np.average(im)), 6)
-#     s_d = np.round(float(np.std(im)), 6)
-#     map_size = im.shape
-    
-#     print("[min, max] = [{}, {}]".format(min, max))
-#     print("[mean, s.d.] = [{}, {}]".format(mean , s_d))
-#     print("map size: {}".format(map_size))
-
-
-# def standardise_data(im):
-#     """ standardises 3D density data
-
-#     Args:
-#         im (np.ndarray): 3D density data
-
-#     Returns:
-#         im (np.ndarray): standardised 3D density data
-#     """
-    
-#     im = (im - im.mean()) / (10 * im.std())
-    
-#     return im 
-
-
-# def normalize_data(im):
-    
-#     im = (im - im.min()) / (im.max() - im.min())
-    
-#     return im
-
-
-
-# def test_assemble_cubes(im, step_size, cube_size):
-#     '''
-#     Test function for assemble_cubes()
-    
-#     '''
-#     from locscale.include.emmer.ndimage.map_tools import compute_real_space_correlation as rsc
-#     step_size = step_size
-#     cube_size = cube_size
-#     cubes = extract_all_cubes_3D([im], step_size, cube_size)[0]
-#     im_assembled = assemble_cubes(cubes, im.shape, cube_size)
-#     print("im_assembled.shape: {}".format(im_assembled.shape))
-#     print("im.shape: {}".format(im.shape))
-#     print("im_assembled == im: {}".format(im_assembled == im))
-#     rsc_score = rsc(im, im_assembled)
-#     print("rsc_score: {}".format(rsc_score))
-#     assert rsc_score > 0.99, "rsc_score is not greater than 0.99 problem with assemble_cubes()"
