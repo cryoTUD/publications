@@ -177,10 +177,12 @@ class save_weights_on_epoch(tf.keras.callbacks.Callback):
         self.model_save_folder = model_save_folder
         self.model_name = model_name
 
-    def on_epoch_end(self, epoch):
-            # save model checkpoint as hdf5 file
-        model_save_path = os.path.join(self.model_save_folder, f"{self.model_name}_epoch-{epoch}.hdf5")
+    def on_epoch_end(self, epoch, logs=None):
+        # save model checkpoint as hdf5 file
+        model_save_path = os.path.join(self.model_save_folder, f"{self.model_name}_epoch-{epoch}.hdf5") 
         self.model.save(model_save_path)
+        
+        
     
 class HDF5CubeDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, parent_h5_path, key_list, batch_size, cube_size=48):
