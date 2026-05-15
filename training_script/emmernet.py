@@ -390,12 +390,14 @@ def prepare_data(args):
 
     _ = prepare_dataset_for_all_emdbs_parallel(emdb_training_id, \
         cubedata_directory=cubedata_training_dir, \
-        collection_directory=collection_data_dir,
+        collection_directory=collection_data_dir, \
+        combined_h5_filename="combined_training_dataset.h5", \
         step_size=step_size_trainval, cube_size=cube_size, n_jobs=num_processes, max_cubes=max_cubes_training)
 
     _ = prepare_dataset_for_all_emdbs_parallel(emdb_validation_id, \
         cubedata_directory=cubedata_validation_dir, \
-        collection_directory=collection_data_dir,
+        collection_directory=collection_data_dir,  
+        combined_h5_filename="combined_validation_dataset.h5", \
         step_size=step_size_trainval, cube_size=cube_size, n_jobs=num_processes, max_cubes=max_cubes_validation)
 
     # final print
@@ -479,10 +481,10 @@ def main():
     # "neural_network" to only run the neural network training,
     # "both" to run both the data preparation and the neural network training in one run
 
-    args_dict["run_configuration"] = "neural_network"
+    args_dict["run_configuration"] = "both"
     # Setting output directories and files
     args_dict["parent_data_dir"] = "/home/abharadwaj1/dev/map_sharpening/emmernet/default_parking" #<-- set parent data directory, 
-    args_dict["model_name"] = "locscale2_training_test" #<-- set model name, collection dir, cubedata_dir and outputdata_dir will be created inside this dir 
+    args_dict["model_name"] = "locscale2_training_test2" #<-- set model name, collection dir, cubedata_dir and outputdata_dir will be created inside this dir 
     args_dict["append_text"] = "dropout_0p5_lr_0p0001_l1_0p01" #<-- set append text to store the model weights and training performance for different hyperparameter settings in different folders, format: [datetime]_[append_text], if None, only datetime will be used
     # Set the input to training as a json file 
     args_dict["training_targets_json"] = "training_targets_temp.json"
