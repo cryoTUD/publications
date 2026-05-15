@@ -1,34 +1,29 @@
-######################################################## IMPORTS ##################################################################
-
-# external imports
-import tensorflow as tf
-import numpy as np
-import pandas as pd
 import os
-import shutil
+import warnings
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+warnings.filterwarnings("ignore", category=UserWarning, module="tensorflow_addons")
+
+import tensorflow as tf
+tf.get_logger().setLevel("ERROR")
+
+import numpy as np
+import h5py
+import json
+import pickle
+import yaml
 import atexit
 import argparse
-from datetime import datetime
-from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-from tensorflow.keras.models import load_model
-from tensorflow.keras.callbacks import ReduceLROnPlateau
-from sklearn.utils import shuffle
-from tensorboard.plugins.hparams import api as hp
-from scipy.ndimage import laplace
-# internal imports
-# Add the path to the sys.path
-import h5py
-from emmernet_utils import collect_all_data, prepare_dataset_for_all_emdbs_parallel
-from emmernet_models import define_model, define_model_regularized, define_model_large, define_model_dropout, define_model_two_channel
 import random
-### set random seed for reproducibility
+from datetime import datetime
+
+from emmernet_utils import collect_all_data, prepare_dataset_for_all_emdbs_parallel
+from emmernet_models import define_model, define_model_large, define_model_dropout
+
 random.seed(42)
 tf.random.set_seed(42)
-np.random.seed(42) 
+np.random.seed(42)
 
 
-########################################################### ARG PARSER ###################################################################
 parser = argparse.ArgumentParser(description="produces neural network sharpened cryo-EM maps, trained on LocScale sharpened maps")
 
 ## MACRO VARIABLES
@@ -71,7 +66,6 @@ parser.add_argument("-gpus", "--GPU_nums", nargs='+', help="numbers of the selec
 # CPUs
 parser.add_argument("-np", "--num_processes", type=int, help="number of processes, defaults to '10'", default=10)
 
-################################################## SET RUN SPECIFIC VARIABLES ############################################################
 
 def create_directories_if_not_exist(*directories):
     for directory in directories:
@@ -117,11 +111,6 @@ def create_directories(args):
     return folders
 
 def print_hyperparameters(args):
-    """ prints all hyperparameters to user
-    """ 
-    import yaml 
-    import json 
-    import pickle
     print("Hyperparameters:")
     folders = create_directories(args)
     model_name_dir = folders["model_data_dir"]
@@ -169,7 +158,6 @@ def print_hyperparameters(args):
     return hyperparameters_dictionary
     
 
-################################################### LOW LEVEL FUNCTIONS #############################################################
 
 class save_weights_on_epoch(tf.keras.callbacks.Callback):
     def __init__(self, model_save_folder, model_name):
@@ -228,21 +216,7 @@ class HDF5CubeDataGenerator(tf.keras.utils.Sequence):
         np.random.shuffle(self.key_list)
 
 def create_hdf5_datagenerators(args):
-    """ creates training and validation datagenerator objects
-
-    Returns:
-        training_data_generator (Custom_Datagenerator): training data generator object
-        validation_data_generator (Custom_Datagenerator): validation data generator object
-    """
-    import pandas as pd
-    import pickle 
-
-    print("\n>>> CREATE DATAGENERATORS")
-    import numpy as np
-    import h5py
-    import tensorflow as tf
-    import json
-    
+    print("\n>>> Creating datagenerators")
     folders = create_directories(args)
     cubedata_top_directory = folders["cubedata_dir"]
 
@@ -253,22 +227,18 @@ def create_hdf5_datagenerators(args):
     h5_file_training = os.path.join(cubedata_directory_training, "combined_training_dataset.h5")
     h5_file_validation = os.path.join(cubedata_directory_validation, "combined_validation_dataset.h5")
 
-    print(f"Training HDF5 file: {h5_file_training}")
-    # Open the HDF5 files to retrieve the keys for the training and validation datasets
     with h5py.File(h5_file_training, 'r') as h5_file:
         key_list_training = list(h5_file.keys())
-
-    print(f"Validation HDF5 file: {h5_file_validation}")
     with h5py.File(h5_file_validation, 'r') as h5_file:
         key_list_validation = list(h5_file.keys())
-    
-    # Dump keys to json files
+
     with open(os.path.join(cubedata_top_directory, "keys.json"), 'w') as f:
         json.dump({"training": key_list_training, "validation": key_list_validation}, f)
 
     training_cubes_length = len(key_list_training)
     validation_cubes_length = len(key_list_validation)
-    print(f"Number of training cubes: {training_cubes_length}")
+    print(f"  Training cubes:   {training_cubes_length}")
+    print(f"  Validation cubes: {validation_cubes_length}")
 
     training_data_generator = HDF5CubeDataGenerator(h5_file_training, key_list_training, args.batch_size, cube_size=args.cube_size)
     validation_data_generator = HDF5CubeDataGenerator(h5_file_validation, key_list_validation, args.batch_size, cube_size=args.cube_size)
@@ -291,32 +261,28 @@ def fit_UNet_model(UNet_model, training_data_generator, validation_data_generato
         history (History object): contains information about the fitting process, like the loss and metric performance per epoch
     """
     
-    print("\n>>> TRAIN MODEL")
+    print("\n>>> Training model")
     folders = create_directories(args)
     saved_models_dir = folders["saved_models_dir"]
 
-    # define size of training and validation datasets
-    training_data_size = training_cubes_length
-    validation_data_size = validation_cubes_length
-    
-    # save log files for tensorboard
     log_dir = os.path.join(saved_models_dir, "logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
-    # run 
     epochs = args.num_epochs
-    nn_callbacks = [save_weights_on_epoch(model_save_folder=saved_models_dir, model_name=args.model_name)]
+    nn_callbacks = [
+        save_weights_on_epoch(model_save_folder=saved_models_dir, model_name=args.model_name),
+        tensorboard_callback,
+    ]
 
-    # fit model
-    nn_callbacks.append(tensorboard_callback)
-
-    history = UNet_model.fit(x = training_data_generator, 
-                             validation_data = validation_data_generator,
-                             epochs = epochs, verbose = 1, 
-                             steps_per_epoch = int(training_data_size // args.batch_size),
-                             validation_steps = int(validation_data_size // args.batch_size), 
-                             callbacks = nn_callbacks
-                            )
+    history = UNet_model.fit(
+        x=training_data_generator,
+        validation_data=validation_data_generator,
+        epochs=epochs,
+        verbose=1,
+        steps_per_epoch=int(training_cubes_length // args.batch_size),
+        validation_steps=int(validation_cubes_length // args.batch_size),
+        callbacks=nn_callbacks,
+    )
     
     # Save model
     models_save_path = os.path.join(saved_models_dir, f"{args.model_name}_final_epoch_{str(epochs).zfill(2)}.hdf5")
@@ -325,17 +291,9 @@ def fit_UNet_model(UNet_model, training_data_generator, validation_data_generato
     return history
     
     
-#################################################### MEDIUM LEVEL FUNCTIONS ############################################################    
 
 def train_UNet_model(UNet_model, args):
-    """ fits model and processes output data to excel and figure (pdf) format
-
-    Args:
-        UNet_model (tf.keras.Model): UNet model object
-        start_type (string): specifies the start type. Options: ["from_scratch", "continue"]
-    """
-    import pickle
-    print("\n### TRAIN UNET MODEL ###")
+    print("\n### Training UNet model ###")
     folders = create_directories(args)
     saved_models_dir = folders["saved_models_dir"]
 
@@ -347,25 +305,19 @@ def train_UNet_model(UNet_model, args):
         training_cubes_length=length_training, validation_cubes_length=length_validation, args=args
     )
     
-    # save training characteristics
-    training_history_json_filename = os.path.join(saved_models_dir, "training_history.pickle")
+    training_history_path = os.path.join(saved_models_dir, "training_history.pickle")
     try:
-        with open(training_history_json_filename, 'wb') as fp:
+        with open(training_history_path, 'wb') as fp:
             pickle.dump(history, fp)
-    except:
-        print("Could not save training history to pickle file.")
+    except Exception as e:
+        print(f"Could not save training history: {e}")
 
 
-#################################################### HIGH LEVEL FUNCTIONS ############################################################
 
 def prepare_data(args):
-    """ prepares training, validation and/or test datasets for the neural network 
-
-    """
     from sklearn.model_selection import train_test_split
-    # print to user
 
-    print("\n### COLLECTING AND PREPARING TRAINING AND VALIDATION DATA ###")
+    print("\n### Collecting and preparing training and validation data ###")
     
     folders = create_directories(args)
 
@@ -390,33 +342,23 @@ def prepare_data(args):
 
     _ = prepare_dataset_for_all_emdbs_parallel(emdb_training_id, \
         cubedata_directory=cubedata_training_dir, \
-        collection_directory=collection_data_dir, \
+        collection_directory=collection_data_dir,
         combined_h5_filename="combined_training_dataset.h5", \
         step_size=step_size_trainval, cube_size=cube_size, n_jobs=num_processes, max_cubes=max_cubes_training)
 
     _ = prepare_dataset_for_all_emdbs_parallel(emdb_validation_id, \
         cubedata_directory=cubedata_validation_dir, \
-        collection_directory=collection_data_dir,  
+        collection_directory=collection_data_dir,
         combined_h5_filename="combined_validation_dataset.h5", \
         step_size=step_size_trainval, cube_size=cube_size, n_jobs=num_processes, max_cubes=max_cubes_validation)
 
-    # final print
-    print("\n##### THE DATA PREPARATION IS SUCCESSFULLY FINISHED #####")
+    print("\n### Data preparation finished ###")
     
 
 def run_UNet_model(args):
-    """ runs training or test run of the UNet model 
-
-    Args:
-        run_type (string): specifies the run type. Options: ["train", "train_test", "test", "test_custom"]
-        start_type (string): specifies the start type. Option: ["from_scratch", "continue"]. Defaults to None.
-        load_epoch (int): specifies the start epoch, needed if the start type is continue. Defaults to None.
-    """
-    output_folders = create_directories(args)
+    create_directories(args)
     GPU_nums_str = ",".join([str(x) for x in args.GPU_nums])
-    # GPUs
-    print("Setting CUDA_VISIBLE_DEVICES to {}".format(args.GPU_nums))
-    os.environ["CUDA_VISIBLE_DEVICES"]=GPU_nums_str
+    os.environ["CUDA_VISIBLE_DEVICES"] = GPU_nums_str
     GPU_nums_length = len(args.GPU_nums) 
     GPU_names = []
     for i in np.arange(GPU_nums_length):
@@ -437,8 +379,6 @@ def run_UNet_model(args):
         else:
             raise ValueError("Cube size {} not supported.".format(args.cube_size))
 
-    print(tf.keras.backend.image_data_format())
-    # start type
     with mirrored_strategy.scope():
         if args.nn_loss_name == "MAE":
             nn_loss = tf.keras.losses.MeanAbsoluteError()
@@ -453,20 +393,14 @@ def run_UNet_model(args):
         else:
             optimizer = tf.keras.optimizers.SGD(learning_rate=args.nn_learning_rate)
         UNet_model.compile(optimizer=optimizer, loss=nn_loss, metrics=nn_metric)
+        #UNet_model.summary()
 
-        print(UNet_model.summary())
-        print(model_definition_function.__name__)
-    
-        # run 
         train_UNet_model(UNet_model, args)
 
     atexit.register(mirrored_strategy._extended._collective_ops._pool.close)
+    print("\n### EmmerNet finished ###")
     
-    # final print
-    print("\n##### EMMERNET HAS SUCCESSFULLY FINISHED RUNNING #####")
-    
-######################################################## RUN SCRIPT ################################################################
-    
+
 def main():
     
     # parse input arguments from user
@@ -484,7 +418,7 @@ def main():
     args_dict["run_configuration"] = "both"
     # Setting output directories and files
     args_dict["parent_data_dir"] = "/home/abharadwaj1/dev/map_sharpening/emmernet/default_parking" #<-- set parent data directory, 
-    args_dict["model_name"] = "locscale2_training_test2" #<-- set model name, collection dir, cubedata_dir and outputdata_dir will be created inside this dir 
+    args_dict["model_name"] = "locscale2_training_test" #<-- set model name, collection dir, cubedata_dir and outputdata_dir will be created inside this dir 
     args_dict["append_text"] = "dropout_0p5_lr_0p0001_l1_0p01" #<-- set append text to store the model weights and training performance for different hyperparameter settings in different folders, format: [datetime]_[append_text], if None, only datetime will be used
     # Set the input to training as a json file 
     args_dict["training_targets_json"] = "training_targets_temp.json"
@@ -510,7 +444,6 @@ def main():
     if "data_preparation" in args.run_configuration:
         prepare_data(args)
     elif "neural_network" in args.run_configuration:
-        print("Running neural network")
         print_hyperparameters(args)
         run_UNet_model(args)
     elif "both" in args.run_configuration:

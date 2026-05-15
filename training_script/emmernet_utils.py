@@ -1,32 +1,10 @@
-
-######################################################## IMPORTS ##################################################################
-# external imports
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import mrcfile
 import os
-import yaml
 import json
-from matplotlib.backends.backend_pdf import PdfPages
-from scipy.ndimage import gaussian_filter
 import h5py
+from scipy.ndimage import gaussian_filter
 
-# internal imports
-from locscale.include.emmer.ndimage.map_utils import resample_map, average_voxel_size
-from locscale.include.emmer.ndimage.profile_tools import frequency_array
-
-
-######################################################## VARIABLES #################################################################
-
-EMDB_PDB_ids_training = ["0026_6gl7", "0038_6gml", "0071_6gve", "0093_6gyn", "0094_6gyo", "0132_6h3c", "0234_6hjn", "0408_6nbd", "0415_6nbq", "4288_6fo2", "0452_6nmi", "0490_6nr8", "0492_6nra", "0567_6o0h", "0589_6nmi", "0592_6o1m", "0665_6oa9", "0776_6ku9", "10049_6rx4", "10069_6s01", "10100_6s5t", "10105_6s6t", "10106_6s6u", "10273_6sof", "10279_6sp2", "10324_6swe", "10333_6swy", "10418_6t9n", "10534_6tni", "10585_6ttu", "10595_6tut", "10617_6xt9", "20145_6oo4", "20146_6oo5", "20189_6osy", "20234_6p19", "20249_6p4h", "20254_6p5a", "20259_6p62", "20270_6p7v", "20271_6p7w", "20352_6pik", "20521_6pxm", "20986_6v0b", "21012_6v1i", "21107_6v8o", "21144_6vbu", "21391_6vv5", "3661_5no2", "3662_5no3", "3802_5of4", "3885_6el1", "3908_6eoj", "4032_5lc5", "4073_5lmn", "4074_5lmo", "4079_5lmt", "4148_5m3m", "4162_6ezo", "4192_6f6w", "4214_6fai", "4241_6fe8", "4272_6fki", "4401_6i2x", "4404_6i3m", "4429_6i84", "4588_6qm5", "4589_6qm6", "4593_6qma", "4728_6r5k", "4746_6r7x", "4759_6r8f", "4888_6ric", "4889_6rid", "4890_6rie", "4907_6rkd", "4917_6rla", "4918_6rlb", "4941_6rn3", "4983_6rqj", "7009_6ave", "7041_6b3q", "7065_6b7y", "7090_6bf6", "7334_6c23", "7335_6c24", "8911_6dt0", "8958_6e1n", "8960_6e1p", "9258_6muw", "9259_6mux", "9931_6k7g", "9934_6k7i", "9935_6k7j", "9939_6k7l", "9941_6k7m", "9695_6iok"]
-EMDB_PDB_ids_validation = ["0193_6hcg", "0257_6hra", "0264_6hs7", "0499_6nsk", "10401_6t8h", "20449_6pqo", "20849_6uqk", "4611_6qp6", "4646_6qvb", "4733_6r69", "4789_6rb9", "7133_6bqv", "7882_6dg7", "8069_5i08", "9112_6mgv", "9298_6mzc", "9374_6nhv"]
-EMDB_PDB_ids_test = ["0282_6huo", "0311_6hz5", "0560_6nzu", "10365_6t23", "20220_6oxl", "20226_6p07", "3545_5mqf", "4141_5m1s", "4531_6qdw", "4571_6qk7", "4997_6rtc", "7127_6bpq", "7573_6crv", "8702_5vkq", "9610_6adq"]
-EMDB_PDB_ids_all = EMDB_PDB_ids_training + EMDB_PDB_ids_validation + EMDB_PDB_ids_test
-
-symmetry_dictionary = {'0026': 'C2', '0038': 'C1', '0071': 'D2', '0093': 'C4', '0094': 'C4', '0132': 'C2', '0234': 'C3', '0408': 'C2', '0415': 'C1', '4288': 'C2', '0452': 'C1', '0490': 'C1', '0492': 'C1', '0567': 'D2', '0589': 'C1', '0592': 'C2', '0665': 'C1', '0776': 'C3', '10049': 'C1', '10069': 'C1', '10100': 'C1', '10105': 'C1', '10106': 'C2', '10273': 'C1', '10279': 'C6', '10324': 'C1', '10333': 'C1', '10418': 'C4', '10534': 'C1', '10585': 'C1', '10595': 'C1', '10617': 'C1', '20145': 'C2', '20146': 'C2', '20189': 'C3', '20234': 'C1', '20249': 'C1', '20254': 'C2', '20259': 'C3', '20270': 'C1', '20271': 'C1', '20352': 'C2', '20521': 'O', '20986': 'C5', '21012': 'C9', '21107': 'C1', '21144': 'C1', '21391': 'C3', '3661': 'C1', '3662': 'C1', '3802': 'C1', '3885': 'C10', '3908': 'C1', '4032': 'C1', '4073': 'C1', '4074': 'C1', '4079': 'C1', '4148': 'C1', '4162': 'C2', '4192': 'C1', '4214': 'C1', '4241': 'C1', '4272': 'C1', '4401': 'C1', '4404': 'C2', '4429': 'C1', '4588': 'C2', '4589': 'C2', '4593': 'C2', '4728': 'C1', '4746': 'C2', '4759': 'C1', '4888': 'C1', '4889': 'C1', '4890': 'C1', '4907': 'D3', '4917': 'C2', '4918': 'C1', '4941': 'C1', '4983': 'C1', '7009': 'C3', '7041': 'C1', '7065': 'C1', '7090': 'C2', '7334': 'C1', '7335': 'C1', '8911': 'C2', '8958': 'C2', '8960': 'C2', '9258': 'C2', '9259': 'C1', '9931': 'C1', '9934': 'C1', '9935': 'C1', '9939': 'C1', '9941': 'C1', '9695': 'C1', '0193': 'C15', '0257': 'C1', '0264': 'C5', '0499': 'C6', '10401': 'C1', '20449': 'C4', '20849': 'C4', '4611': 'C2', '4646': 'C2', '4733': 'C1', '4789': 'C7', '7133': 'C4', '7882': 'C5', '8069': 'C3', '9112': 'C2', '9298': 'C1', '9374': 'C1', '0282': 'C1', '0311': 'C2', '0560': 'C2', '10365': 'C1', '20220': 'C1', '20226': 'C1', '3545': 'C1', '4141': 'C1', '4531': 'C1', '4571': 'C1', '4997': 'C2', '7127': 'C4', '7573': 'C3', '8702': 'C4', '9610': 'C2'}
-res_dict = {"0026" : 6.3, "0038" : 3.2, "0071" : 3.9, "0093" : 3.4, "0094" : 3.4, "0132" : 3.9, "0234" : 3.3, "0408" : 3.2, "0415" : 3.1, "4288" : 4.4, "0452" : 3.7, "0490" : 7.8, "0492" : 7.7, "0567" : 3.67, "0589" : 3.9, "0592" : 3.15, "0665" : 3.9, "0776" : 2.67, "10049" : 3.3, "10069" : 3.2, "10100" : 4.15, "10105" : 4.1, "10106" : 3.5, "10273" : 4.3, "10279" : 3.33, "10324" : 3.1, "10333" : 3.2, "10418" : 2.96, "10534" : 3.4, "10585" : 3.7, "10595" : 3.25, "10617" : 3.8, "20145" : 3.3, "20146" : 4.2, "20189" : 4.3, "20234" : 3.8, "20249" : 3.2, "20254" : 3.6, "20259" : 3.57, "20270" : 4, "20271" : 4.1, "20352" : 7.8, "20521" : 2.1, "20986" : 4.1, "21012" : 3.8, "21107" : 3.07, "21144" : 3.1, "21391" : 3.5, "3661" : 5.16, "3662" : 5.16, "3802" : 4.4, "3885" : 6.1, "3908" : 3.55, "4032" : 4.35, "4073" : 3.55, "4074" : 4.3, "4079" : 4.15, "4148" : 4, "4162" : 4.1, "4192" : 3.81, "4214" : 3.4, "4241" : 4.1, "4272" : 4.3, "4401" : 3.35, "4404" : 3.93, "4429" : 4.4, "4588" : 3.6, "4589" : 3.7, "4593" : 3.7, "4728" : 4.8, "4746" : 3.47, "4759" : 3.8, "4888" : 2.8, "4889" : 2.9, "4890" : 3.1, "4907" : 3.2, "4917" : 3.9, "4918" : 4.5, "4941" : 4, "4983" : 3.5, "7009" : 3.7, "7041" : 3.7, "7065" : 6.5, "7090" : 6.5, "7334" : 3.9, "7335" : 3.5, "8911" : 3.7, "8958" : 3.7, "8960" : 3.7, "9258" : 3.6, "9259" : 3.9, "9931" : 3.3, "9934" : 3.22, "9935" : 3.08, "9939" : 2.83, "9941" : 2.95, "9695" : 3.64, "0193" : 4.3, "0257" : 3.7, "0264" : 4.6, "0499" : 2.7, "10401" : 3.77, "20449" : 2.88, "20849" : 3.77, "4611" : 3.2, "4646" : 4.34, "4733" : 3.65, "4789" : 3.2, "7133" : 3.1, "7882" : 3.32, "8069" : 4.04, "9112" : 3.1, "9298" : 4.5, "9374" : 3.5, "0282" : 3.26, "0311" : 4.2, "0560" : 3.2, "10365" : 3.1, "20220" : 3.5, "20226" : 3.2, "3545" : 5.9, "4141" : 6.7, "4531" : 2.83, "4571" : 3.3, "4997" : 3.96, "7127" : 4.1, "7573" : 3.2, "8702" : 3.55, "9610" : 3.5}
-######################################################## FUNCTIONS #################################################################
 
 def try_to_run(func):
     def wrapper(*args, **kwargs):
@@ -110,8 +88,6 @@ def filter_cubecenters_by_mask(cubecenters, mask, cube_size, signal_to_noise_cub
 
     random.seed(42)
 
-    print("Initial number of cubes: {}".format(len(cubecenters)))
-    filtered_cubecenters = []
     signal_cubes_centers = []
     noise_cubes_centers = []
     for center in cubecenters:
@@ -126,14 +102,9 @@ def filter_cubecenters_by_mask(cubecenters, mask, cube_size, signal_to_noise_cub
 
     required_noise_cubes = int(num_signal_cubes / signal_to_noise_cubes)
     if num_noise_cubes < required_noise_cubes:
-        print("Not enough noise cubes. Using all noise cubes")
         sampled_noise_cubes = noise_cubes_centers
-        
     else:
-        print(f"Using {required_noise_cubes} noise cubes out of {num_noise_cubes} noise cubes randomly")
         sampled_noise_cubes = random.sample(noise_cubes_centers, required_noise_cubes)
-    print(f"num_signal_cubes: {num_signal_cubes}")
-    print(f"num_noise_cubes: {len(sampled_noise_cubes)}")
     
     filtered_cubecenters = signal_cubes_centers + sampled_noise_cubes
 
@@ -142,64 +113,8 @@ def filter_cubecenters_by_mask(cubecenters, mask, cube_size, signal_to_noise_cub
     return filtered_cubecenters, signal_cubes_centers, sampled_noise_cubes
 
 
-def extract_cubes_from_cubecenters(emmap_path, cubecenters, signal_cubes, cube_size, output_dir, filename_id, save_assembly_test=False):
-    '''
-    Utility function to extract all cubes from a 3D density map in a rolling window fashion
-    
-    '''
-    from locscale.include.emmer.ndimage.map_utils import extract_window , load_map, save_as_mrc
-    import os
-    import json
-    # extract all cubes from the volume
-    # assert that output directory exists
-    assert os.path.exists(output_dir), f"Output directory {output_dir} does not exist"
-
-    # Extract EMDB information from the emmap_path
-    basename = os.path.basename(emmap_path)
-    emdb_id = basename.split("_")[1]
-    emmap, apix = load_map(emmap_path)
-
-    cubes = {}
-    all_filenames = {}
-    for i,center in enumerate(cubecenters):
-        cube = extract_window(emmap, center=center, size=cube_size)
-        cube = np.expand_dims(cube, axis=3)
-        # save cube
-        is_signal = center in signal_cubes
-        if is_signal:
-            cube_filename = os.path.join(output_dir, f"signal_cube_{filename_id}_{i}_{emdb_id}_{center[0]}_{center[1]}_{center[2]}.npy")
-        else:
-            cube_filename = os.path.join(output_dir, f"noise_cube_{filename_id}_{i}_{emdb_id}_{center[0]}_{center[1]}_{center[2]}.npy")
-
-        np.save(cube_filename, cube)
-        cubes[i] = {'cube': cube, 'center': center, 'filename': cube_filename}
-        all_filenames[tuple(center)] = cube_filename
-    
-
-    
-    if save_assembly_test:    
-        cubes_assembled = assemble_cubes(cubes_dictionary=cubes, im_shape=emmap.shape, cube_size=cube_size, average=True, draw_grid=True)
-        project_assembled = plot_projections(cubes_assembled, return_figure=True)
-        project_volume = plot_projections(emmap, return_figure=True)
-        savepath = os.path.join(output_dir, "cubes_assembled_Y.png")
-        project_assembled.savefig(savepath)
-        savepath = os.path.join(output_dir, "preprocessed_volume.png")
-        project_volume.savefig(savepath)
-        save_as_mrc(cubes_assembled, os.path.join(output_dir, f"cubes_assembled_{emdb_id}.mrc"), apix=1)
-        
-
-    return all_filenames
-
 def extract_cubes_from_cubecenters_h5py(emmap_path, cubecenters, signal_cubes, cube_size, output_dir, filename_id, save_assembly_test=False):
-    '''
-    Utility function to extract all cubes from a 3D density map in a rolling window fashion
-    
-    '''
-    from locscale.include.emmer.ndimage.map_utils import extract_window , load_map, save_as_mrc
-    import os
-    import json
-    # extract all cubes from the volume
-    # assert that output directory exists
+    from locscale.include.emmer.ndimage.map_utils import extract_window, load_map, save_as_mrc
     assert os.path.exists(output_dir), f"Output directory {output_dir} does not exist"
 
     # Extract EMDB information from the emmap_path
@@ -244,12 +159,10 @@ def extract_cubes_for_augmented_map(augmented_maps_dict, cubecenters, rotated_cu
     '''
     from locscale.include.emmer.ndimage.map_utils import extract_window
 
-    print(augmented_maps_dict['original'])
     parent_directory = os.path.dirname(augmented_maps_dict["original"])
     cubes_dir = os.path.join(parent_directory, "cubes")
     if not os.path.exists(cubes_dir):
         os.mkdir(cubes_dir)
-    print(cubes_dir)
     cube_filenames_extracted = {}
     for augmentation_type in augmented_maps_dict.keys():
         output_dir = os.path.join(cubes_dir, augmentation_type)
@@ -363,10 +276,7 @@ def bfactor_augment_map(emmap_path, num_augment, fsc_resolution, wilson_cutoff=1
     freq = frequency_array(rp_emmap, apix)
 
     bfactor = estimate_bfactor_standard(freq, rp_emmap, wilson_cutoff=wilson_cutoff, fsc_cutoff=fsc_resolution, standard_notation=True)
-    print("bfactor: {}".format(bfactor))
-
     new_bfactors = np.random.uniform(low=0, high=400, size=num_augment)
-    print("new_bfactors: {}".format(new_bfactors))
     augmented_maps = {}
     for i in range(num_augment):
         new_bfactor = new_bfactors[i]
@@ -431,11 +341,6 @@ def rotation_augment_map(emmap_path, num_augments=4, setup=None):
     return rotation_augmented_maps
 
 def gaussian_blur_augment_map(emmap_path, num_augments=1, setup=None):
-    '''
-    Utility function to augment a map with gaussian blur 
-    
-    '''
-    from scipy.ndimage import gaussian_filter
     from locscale.include.emmer.ndimage.map_utils import load_map, save_as_mrc
 
     gaussian_blur_augmented_maps = {}
@@ -511,13 +416,11 @@ def augment_maps(emmap_path, fsc_resolution, wilson_cutoff, augmentation_log_fil
         gaussian_blur_augmented_maps = gaussian_blur_augment_map(emmap_path, num_augments=1)
         augmented_maps["gaussian_blur"] = gaussian_blur_augmented_maps 
     
-    print(f"Done augmenting maps for {os.path.basename(emmap_path)}")
     return augmented_maps
 
 def preprocess_the_augmented_maps(emmap_path, augmented_maps, aug_log_file_path, output_dir, map_type):
     from locscale.include.emmer.ndimage.map_utils import load_map, save_as_mrc
     
-    print(f"Preprocessing the original map {os.path.basename(emmap_path)}")
     emmap, apix = load_map(emmap_path)
     standardize = True if map_type == "X" else False
     preprocessed_emmap_map = preprocess_emmap(emmap=emmap, apix=apix, standardize=standardize)
@@ -582,11 +485,6 @@ def create_and_extract_cubes_for_all_augmentation_per_map(emmap_path, mask_path,
     augmentation_information, augmented_maps_dict = preprocess_the_augmented_maps(augmented_maps=augmented_maps, emmap_path=emmap_path, \
                                                             aug_log_file_path=aug_log_file_path, output_dir=output_dir, map_type=map_type)
     
-    print(f"Creating the chunks for the original map and the augmented maps")
-
-    # Extract cubes from the augmented maps
-    
-    print(f"Preprocessing the mask {os.path.basename(mask_path)}")
     mask_binarize, apix = load_smoothened_mask(mask_path)
     preprocessed_mask = preprocess_emmap(emmap=mask_binarize, apix=apix, standardize=False)
     
@@ -630,7 +528,6 @@ def chunk_and_save_emdb_pdb_cubes(emdb_id, step_size, cube_size, cubedata_dir, c
 
     matched_filenames_path = os.path.join(emdb_cubedata_dir, f"XY_filenames_matched_{emdb_id}.json")
     if os.path.exists(matched_filenames_path):
-        print(f"Matched filenames for {emdb_id} already exists")
         return matched_filenames_path
     
     collected_filenames_path = os.path.join(collection_directory, "collected_file_names.json")
@@ -664,7 +561,7 @@ def chunk_and_save_emdb_pdb_cubes(emdb_id, step_size, cube_size, cubedata_dir, c
 
     # create a directory to store the cubes for X: unsharpened map and Y: locscale maps
     emmap_cubes_dir = os.path.join(emdb_cubedata_dir, f"X_emmap_cubes_{emdb_id}")
-    locscale_cubes_dir = os.path.join(emdb_cubedata_dir, f"Y_locscale_cubes_{emdb_id}")
+    locscale_cubes_dir = os.path.join(emdb_cubedata_dir, f"Y_emmap_cubes_{emdb_id}")
     
     if not os.path.exists(emmap_cubes_dir):
         os.mkdir(emmap_cubes_dir)
@@ -698,10 +595,10 @@ def chunk_and_save_emdb_pdb_cubes(emdb_id, step_size, cube_size, cubedata_dir, c
 
     XY_filenames_matched = match_XY_filenames(X_cubes_filenames_dictionary, Y_cubes_filenames_dictionary)
 
-    # dump the matched filenames to a json file
-    
     with open(matched_filenames_path, 'w') as f:
         json.dump(XY_filenames_matched, f, indent=4)
+
+    print(f"  Done: {emdb_id}  →  {emdb_cubedata_dir}")
     return XY_filenames_matched
 
 def match_XY_filenames(X_filenames_dict, Y_filenames_dict):
@@ -709,7 +606,6 @@ def match_XY_filenames(X_filenames_dict, Y_filenames_dict):
     
     for augmentation_type_X in X_filenames_dict:
         augmentation_type_Y = augmentation_type_X if augmentation_type_X == "rotation" else "original"
-        print(augmentation_type_X)
         for aug_id_X in X_filenames_dict[augmentation_type_X].keys():
             aug_id_Y = str(aug_id_X) if augmentation_type_X == "rotation" else "0"
             
@@ -784,7 +680,6 @@ def create_combined_dataset(cubedata_directory, combined_dataset_filename):
     from tqdm import tqdm
     import h5py
     emdb_ids_in_cubedata = [x for x in os.listdir(cubedata_directory) if os.path.isdir(os.path.join(cubedata_directory, x))]
-    print("Number of emdb_ids in cubedata: ", len(emdb_ids_in_cubedata))
     emdb_dirs = [os.path.join(cubedata_directory, x) for x in emdb_ids_in_cubedata]
     # Create a hdf5 file to store the combined dataset
     combined_dataset_path = os.path.join(cubedata_directory, combined_dataset_filename)
@@ -818,7 +713,7 @@ def create_combined_dataset(cubedata_directory, combined_dataset_filename):
                 x_h5_basename = "cubes_original_map.h5" if x_augmentation_type == "original" else f"cubes_{x_augmentation_type}_{x_augmentation_number}_map.h5"
                 x_h5_file = os.path.join(emdb_dir, f"X_emmap_cubes_{os.path.basename(emdb_dir)}","cubes",f"{x_augmentation_type}", x_h5_basename)
                 y_h5_basename = "cubes_original_map.h5" if y_augmentation_type == "original" else f"cubes_{y_augmentation_type}_{y_augmentation_number}_map.h5"
-                y_h5_file = os.path.join(emdb_dir, f"Y_locscale_cubes_{os.path.basename(emdb_dir)}","cubes",f"{y_augmentation_type}", y_h5_basename)
+                y_h5_file = os.path.join(emdb_dir, f"Y_emmap_cubes_{os.path.basename(emdb_dir)}","cubes",f"{y_augmentation_type}", y_h5_basename)
                 if not os.path.isfile(x_h5_file):
                     print(f"{x_h5_file} does not exist")
                     continue
@@ -833,9 +728,8 @@ def create_combined_dataset(cubedata_directory, combined_dataset_filename):
                 group[f"{i}_y_{emdb_id}_{y_key}"] = h5py.ExternalLink(y_h5_file, y_key)
                 
                 
-    # print the length of keys in the combined dataset
     with h5py.File(combined_dataset_path, "r") as combined_dataset:
-        print("Number of keys in the combined dataset: ", len(combined_dataset.keys()))
+        print(f"Combined dataset: {len(combined_dataset.keys())} entries")
                 
     return combined_dataset_path
 
@@ -910,33 +804,21 @@ def prepare_dataset_for_all_emdbs_parallel(emdb_ids_to_prepare, cubedata_directo
     else:
         max_num_cubes_per_entry = None
 
-    print("Starting to prepare the dataset for all EMDB PDB entries in parallel")
-    print("Starting to prepare the dataset for all EMDB PDB entries in parallel")
-    results = Parallel(n_jobs=n_jobs, verbose=10)(delayed(chunk_and_save_emdb_pdb_cubes)(
+    results = Parallel(n_jobs=n_jobs, verbose=0)(delayed(chunk_and_save_emdb_pdb_cubes)(
                         emdb_id=emdb_id, step_size = step_size ,cube_size = cube_size, \
                         cubedata_dir = cubedata_directory, collection_directory=collection_directory, \
                         max_num_cubes=max_num_cubes_per_entry) \
                         for emdb_id in emdb_ids_to_prepare)
-    print("Done preparing dataset for all EMDB PDB entries")
     X_filenames_dataset = []
     Y_filenames_dataset = []
     XY_filenames_dataset = []
     for result in results:
-        if result == 420 or result == 840:
-            print("Something went wrong with this entry")
-            print("Error code: ", result)
-        else:
-            #X_cubes_filenames, Y_cubes_filenames = result
+        if result not in [420, 840]:
             XY_filenames_dataset.extend(result)
-            #X_filenames_dataset.extend(X_cubes_filenames)
-            #Y_filenames_dataset.extend(Y_cubes_filenames)
-            
-    print("Done preparing dataset for all EMDB PDB entries")
+
     num_results = len(results)
-    print(f"Number of results: {num_results}")
-    num_skipped_entries = len([result for result in results if result in [420, 840]])
-    print(f"Number of skipped entries: {num_skipped_entries}")
-    print(f"Number of entries processed: {num_results - num_skipped_entries}")
+    num_skipped = len([r for r in results if r in [420, 840]])
+    print(f"Done: {num_results - num_skipped}/{num_results} entries processed ({num_skipped} skipped)")
 
     # Save the filenames of the cubes as a json file
     X_filenames_dataset_json = os.path.join(cubedata_directory, "X_filenames_dataset.json")
