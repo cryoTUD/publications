@@ -10,12 +10,11 @@ def check_and_download_plot_data(LOCSCALE_2_SCRIPTS_PATH):
     import os 
     import wget 
     import zipfile
-    data_folder = os.path.join(LOCSCALE_2_SCRIPTS_PATH, "LocScale2.0_NComms_2026_plotData")
+    data_folder = os.path.join(LOCSCALE_2_SCRIPTS_PATH, "LocScale2_NatComms_sourceData")
     if os.path.exists(data_folder):
         print("Data already exists. Skipping download.")
         return data_folder
-    
-    url_for_plot_data = "https://surfdrive.surf.nl/public.php/dav/files/pr7rjMgKGZwY5Qa/?accept=zip"
+    url_for_plot_data = "https://surfdrive.surf.nl/public.php/dav/files/8imS29ZZcbMmW47/?accept=zip"
     # download the data
     PLOT_DATA_STORE_PATH_zip = LOCSCALE_2_SCRIPTS_PATH + ".zip"
     wget.download(url_for_plot_data, out=PLOT_DATA_STORE_PATH_zip)
@@ -24,7 +23,7 @@ def check_and_download_plot_data(LOCSCALE_2_SCRIPTS_PATH):
         zip_ref.extractall(LOCSCALE_2_SCRIPTS_PATH)
 
     os.remove(PLOT_DATA_STORE_PATH_zip)
-    data_folder = os.path.join(LOCSCALE_2_SCRIPTS_PATH, "LocScale2.0_NComms_2026_plotData")
+    data_folder = os.path.join(LOCSCALE_2_SCRIPTS_PATH, "LocScale2_NatComms_sourceData")
     if os.path.exists(data_folder):
         print("Data downloaded and extracted successfully.")
         return data_folder
