@@ -1,4 +1,4 @@
-# Repository of figure reproducibility scripts for AJ lab publications
+# Repository of reproducibility scripts for AJ lab publications
 
 This repository contains scripts from the [AJ lab](https://cryoem.tudelft.nl/) for reproducing figures and analyses from the publications listed below. Click on the links below to open the corresponding repository branch with the relevant scripts and supporting materials.
 
