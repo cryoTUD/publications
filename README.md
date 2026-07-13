@@ -10,5 +10,5 @@ This repository contains scripts from the [AJ lab](https://cryoem.tudelft.nl/) f
    Branch: https://github.com/cryoTUD/publications/tree/LocScale_2025
 
 3. Bharadwaj, A., Veerbeek, L. & Jakobi, A. J. *Interactive segmentation of membrane and membrane mimic densities in cryo-EM maps*.
-   bioRxiv (2026)     
+   Acta Cryst. D82  (2026)     
    Branch: https://github.com/cryoTUD/publications/tree/SURFER_2026
