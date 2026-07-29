@@ -260,11 +260,9 @@ def get_2d_jointplot_with_list_of_series(x_array, y_array, list_of_x_array_serie
 
     # Compute contour levels based on cumulative probability
     levels = get_cumulative_probability_threshold_levels(x_array, y_array, probability_levels_required)
-    print(f"Levels: {levels}")
     levels_increasing = sorted(levels)
       # Rename the contour levels to match required probability levels
     contour_labels = [f'{(p)*100:.1f}' for p in probability_levels_required]
-    print(f"Contour labels: {contour_labels}")
     labels_dictionary = {levels[i]: contour_labels[i] for i in range(len(levels))}
 
     # Create the plot
@@ -293,9 +291,7 @@ def get_2d_jointplot_with_list_of_series(x_array, y_array, list_of_x_array_serie
         y_array_series = list_of_y_array_series[series_index]
         color_array = list_of_color_array[series_index]
         # Plot the series of X and Y arrays and color based on series color
-        print(len(x_array_series), "len x array series")
-        print(len(y_array_series), "len y array series")
-        print(len(color_array), "len color array")
+
         assert len(x_array_series) == len(y_array_series) == len(color_array)
         x_array_series = np.array(x_array_series)
         y_array_series = np.array(y_array_series)
@@ -362,9 +358,10 @@ def get_2d_jointplot_with_list_of_series(x_array, y_array, list_of_x_array_serie
     #plt.ylim(0, 1.2)
 
     plt.tight_layout()
-    plt.savefig(save_path)
+    if save_path is not None:
+        plt.savefig(save_path)
     
-    plt.close()
+        plt.close()
 
 def calculate_radiomic_features(mask_array, apix, settings_file):
     import SimpleITK as sitk
